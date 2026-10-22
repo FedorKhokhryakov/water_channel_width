@@ -1,11 +1,6 @@
-"""Калибровка камеры по шахматной доске (раздел 5 ноутбука) -> calibration/stern_camera.yaml.
+"""Калибровка камеры по шахматной доске.
 
-    python calibration/calibrate_camera.py --images "./2560х1440/*.png" --out calibration/stern_camera.yaml
-    python calibration/calibrate_camera.py --images "..." --rational   # 8 коэффициентов, лучше для широкого угла
-
-Помимо ошибки репроекции печатает, в какой части кадра модель дисторсии обратима: у
-5-коэффициентной модели с большими отрицательными k1/k2 углы кадра «ломаются», и тогда
-стоит добавить снимков доски у краёв кадра и/или включить --rational.
+    python calibration/calibrate_camera.py --images "calibration/chessboard/*.png" [--rational]
 """
 from __future__ import annotations
 
@@ -56,8 +51,7 @@ def main():
     print("Покрытие кадра углами доски: %.0f%% x %.0f%%" % (cover[0] * 100, cover[1] * 100))
     print("Дисторсия обратима на %.0f%% кадра" % (cam.valid_fraction() * 100))
     if cam.valid_fraction() < 0.98:
-        print("ВНИМАНИЕ: в углах кадра модель дисторсии необратима — добавьте снимков доски у краёв "
-              "кадра и/или запустите с --rational")
+        print("ВНИМАНИЕ: в углах кадра дисторсия необратима, нужны снимки у краёв или --rational")
 
     Path(a.out).parent.mkdir(parents=True, exist_ok=True)
     with open(a.out, "w", encoding="utf-8") as f:
