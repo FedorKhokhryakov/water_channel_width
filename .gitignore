@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+*.egg-info/
+build/
+dist/
+.venv/
+.pytest_cache/
+.ruff_cache/
+# веса и данные не кладём в git (храните отдельно или через Git LFS)
+models/*.onnx
+models/*.json
+*.pth
+checkpoints*/
+bundle/
+*.tar.gz
+/out/

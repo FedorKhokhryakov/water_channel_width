@@ -1,0 +1,45 @@
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "icechannel"
+dynamic = ["version"]
+description = "Ширина ледового канала за кормой ледокола: сегментация (ONNX) + геометрия камеры"
+readme = "README.md"
+requires-python = ">=3.7"
+license = {text = "GPL-3.0-or-later"}
+# Только то, что нужно на судне. torch/opencv/albumentations — в training/requirements.txt.
+dependencies = [
+    "numpy>=1.19",
+    "onnxruntime>=1.10",
+    "Pillow>=8.0",
+    "PyYAML>=5.1",
+]
+
+[project.optional-dependencies]
+dev = ["pytest", "ruff"]
+
+[project.scripts]
+ice-channel = "icechannel.cli:main"
+
+[tool.setuptools.dynamic]
+version = {attr = "icechannel.__version__"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py37"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "B", "I"]
+ignore = ["E501"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["icechannel"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+known-local-folder = ["dataset", "model", "synthetic"]
