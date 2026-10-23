@@ -1,0 +1,10 @@
+# Только для машины разработчика (обучение, экспорт, калибровка). На судно НЕ ставится.
+torch>=2.1
+albumentations>=1.4
+opencv-python-headless>=4.8
+onnx>=1.15
+onnxruntime>=1.16
+numpy
+pillow
+pyyaml
+matplotlib

@@ -14,3 +14,8 @@ checkpoints*/
 bundle/
 *.tar.gz
 /out/
+
+# служебные файлы Windows
+*Zone.Identifier
+desktop.ini
+Thumbs.db
