@@ -1,0 +1,54 @@
+# Конфигурация icechannel. Скопируйте в config.yaml и поправьте пути.
+# Не указанные параметры берутся по умолчанию (полный список: src/icechannel/config.py).
+# Относительные пути считаются от папки, где лежит этот файл.
+
+paths:
+  inbox: /data/inbox                    # сюда судовая система складывает zip-архивы
+  output: /data/ice_channel             # сюда пишутся результаты
+  model: ../models/model.onnx           # рядом должен лежать model.json
+  calibration: ../calibration/stern_camera.yaml
+
+scan:
+  interval_sec: 10                      # как часто проверять inbox
+  pattern: "*stern*.zip"                # имя архива: дата_время_названиелидара.zip
+  settle_sec: 5                         # архив не менялся N секунд -> копирование завершено
+  process_existing: true                # обработать архивы, лежащие в inbox при старте
+  max_age_hours: 0                      # 0 — без ограничения
+  image_patterns:                       # какой кадр брать из архива (по приоритету)
+    - "*stern_cameraupscale*"
+    - "*stern_camera*"
+  meta_keys: []                         # значения из JSON в архиве, которые нужно сохранить, напр. "stern_lidar.speed"
+
+model:
+  threads: 2                            # потоки CPU для нейросети
+  tta_flip: false
+
+camera:
+  height_m: 21.0                        # высота камеры над водой (зависит от осадки!)
+  pitch_ref_deg: 12.0                   # типичный наклон камеры (запасной, если горизонт не найден)
+  pitch_tol_deg: 3.0
+  roll_max_deg: 4.0
+  pitch_offset_deg: 0.0                 # поправка по результатам калибровки (см. docs/GEOMETRY.md)
+
+measure:
+  z_max_m: 400                          # дальше не меряем
+  z_near_m: 250                         # «надёжная» зона, по ней считается width_m
+  sections_m: [100, 150, 200, 250, 300] # сечения, в которых выдаётся ширина
+  primary: near                         # near | all
+  centerline_degree: 1                  # 2 — если канал заметно изогнут
+
+output:
+  overlays: true                        # контрольные картинки
+  overlay_every: 1                      # каждый N-й (подозрительные кадры — всегда)
+  overlays_max_mb: 300                  # лимит папки overlays, старые удаляются
+  masks: true
+  masks_max_mb: 200
+  min_free_mb: 500                      # при нехватке места пишется только CSV
+  on_done: keep                         # keep | move | delete — что делать с обработанным архивом
+
+logging:
+  level: INFO
+
+web:
+  host: 127.0.0.1                       # доступ с берега — через ssh -L 8585:127.0.0.1:8585
+  port: 8585
