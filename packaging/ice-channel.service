@@ -1,0 +1,17 @@
+[Unit]
+Description=Ice channel width (stern camera)
+After=network.target local-fs.target
+
+[Service]
+Type=simple
+User=@USER@
+ExecStart=@PREFIX@/bin/ice-channel run -q -c @PREFIX@/config/config.yaml
+Restart=always
+RestartSec=10
+Nice=10
+IOSchedulingClass=idle
+MemoryMax=1500M
+Environment=OMP_NUM_THREADS=2
+
+[Install]
+WantedBy=multi-user.target
