@@ -23,7 +23,9 @@ BASE_COLUMNS = [
 TAIL_COLUMNS = [
     "n_rows", "rows_total", "rows_rejected_occluded", "z_min_m", "z_max_m", "trend_m_per_100m",
     "heading_deg", "centerline_offset_m", "vessel_z_m", "pitch_deg", "roll_deg", "horizon_source",
-    "horizon_rms_px", "pitch_vp_deg", "edge_entropy", "slant_bottom_m", "model_ms", "proc_ms",
+    "horizon_rms_px", "pitch_vp_deg", "edge_entropy", "slant_bottom_m",
+    "speed_mps", "speed_source", "closing_slope_m_per_100m", "closing_speed_ms", "closing_note",
+    "compression_speed_ms", "compression_n", "compression_score", "model_ms", "proc_ms",
     "model", "meta",
 ]
 

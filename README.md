@@ -66,5 +66,8 @@ sudo systemctl start ice-channel
 | `status`, `flags` | `ok` / `suspect` / `fail` и причины |
 | `pitch_deg`, `roll_deg` | наклон и крен камеры по горизонту |
 | `vessel_z_m` | расстояние до судна, идущего за ледоколом по каналу |
+| `closing_speed_ms` | скорость закрытия кромки канала: −(dW/dZ)·V/2 по 100–250 м, V — скорость судна |
+| `compression_score` | балл сжатия по медиане за 30 мин (см. `docs/COMPRESSION.md`) |
+| `closing_note` | почему кадр не годен для сжатия: `vessel`, `turn`, `no_speed`, `slow`, `few_rows` |
 
 Рядом лежат контрольные картинки (`overlays/`), маски и лог.

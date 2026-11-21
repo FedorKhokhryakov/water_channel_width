@@ -65,6 +65,8 @@ class Engine:
                 if row.get("status") == "ok" and row.get("width_m"):
                     self.processor.history.append((t, float(row["width_m"])))
                     n += 1
+                if not row.get("closing_note") and row.get("closing_speed_ms"):
+                    self.processor.compression.add(t, float(row["closing_speed_ms"]))
                 if row.get("horizon_source") == "mask" and row.get("pitch_deg"):
                     self.processor.tracker.add(t, float(row["pitch_deg"]), float(row["roll_deg"]))
             except (KeyError, ValueError):
@@ -72,9 +74,21 @@ class Engine:
         if n:
             log.info("История восстановлена: %d кадров", n)
 
+    def _speed(self, meta: Optional[Dict[str, Any]]) -> Optional[float]:
+        """Скорость судна из JSON архива (м/с) или None."""
+        ccfg = self.cfg["compression"]
+        key = ccfg["speed_key"]
+        if not key or not meta or key not in meta:
+            return None
+        try:
+            v = float(meta[key])
+        except (TypeError, ValueError):
+            return None
+        return v * 0.5144 if ccfg["speed_units"] == "knots" else v
+
     def process_image(self, img, ts: Optional[datetime], name: str,
                       meta: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
-        out = self.processor.process_image(img, ts, name)
+        out = self.processor.process_image(img, ts, name, self._speed(meta))
         out["result"]["model"] = self.segmenter.version
         out["result"]["meta"] = meta or ""
         self.store.save(out, img, self.colors)
@@ -103,8 +117,7 @@ class Service:
             return "skipped_old"
         try:
             if path.suffix.lower() == ".zip":
-                _, data, meta_all = read_archive(path, self.scfg["image_patterns"],
-                                                      bool(self.scfg["meta_keys"]))
+                _, data, meta_all = read_archive(path, self.scfg["image_patterns"], bool(self._meta_keys()))
             else:
                 data, meta_all = path.read_bytes(), {}
         except zipfile.BadZipFile:
@@ -118,7 +131,7 @@ class Service:
             log.warning("В архиве нет кадра по шаблонам %s: %s", self.scfg["image_patterns"], name)
             return "no_image"
         img = decode_image(data)
-        meta = extract_meta(meta_all, self.scfg["meta_keys"]) if meta_all else {}
+        meta = extract_meta(meta_all, self._meta_keys()) if meta_all else {}
         out = self.engine.process_image(img, ts, name, meta)
         r = out["result"]
         log.info("%s %s W=%s м (сглаж. %s) pitch=%s roll=%s %s%s [%s мс]", name, r["status"],
@@ -128,6 +141,11 @@ class Service:
                  r.get("proc_ms"))
         self.stats.update(last_file=name, last_width_m=r.get("width_m", ""), last_time=r.get("time"))
         return r["status"]
+
+    def _meta_keys(self):
+        keys = list(self.scfg["meta_keys"])
+        sk = self.cfg["compression"]["speed_key"]
+        return keys + [sk] if sk and sk not in keys else keys
 
     def _finish(self, path: Path, status: str) -> None:
         self.state.add(path.name, status)

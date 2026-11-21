@@ -50,6 +50,8 @@ def _cmd_process(args) -> int:
     from .storage import ResultStore
 
     cfg = load_config(args.config)
+    if args.speed:
+        cfg["compression"]["speed_default_mps"] = float(args.speed)
     if args.no_overlays:
         cfg["output"]["overlays"] = False
     out_dir = Path(args.out) if args.out else cfg.path("output")
@@ -177,6 +179,7 @@ def main(argv=None) -> None:
                     help="входы — готовые label-маски полного кадра, модель не нужна")
     pr.add_argument("--images", help="папка с исходными кадрами для overlay в режиме --masks")
     pr.add_argument("--no-overlays", action="store_true")
+    pr.add_argument("--speed", type=float, default=0.0, help="скорость судна, м/с (если её нет в архивах)")
     pr.add_argument("--limit", type=int, default=0)
     pr.set_defaults(func=_cmd_process)
 

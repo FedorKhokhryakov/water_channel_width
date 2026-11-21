@@ -67,6 +67,22 @@ DEFAULTS: Dict[str, Any] = {
         "smooth_window": 5,                  # сглаженная ширина: медиана последних N надёжных кадров
         "smooth_minutes": 20,
     },
+    "compression": {
+        "speed_key": "",                     # поле скорости в JSON архива, напр. "nav.speed"
+        "speed_units": "mps",                # mps | knots
+        "speed_default_mps": 0.0,            # скорость, если в архиве её нет (0 = неизвестна)
+        "z_min_m": 100.0,                    # зона, где меряем наклон ширины
+        "z_max_m": 250.0,
+        "min_rows": 8,
+        "min_span_m": 60.0,
+        "vessel_clear_m": 500.0,             # судно сзади ближе -> сжатие не считаем
+        "max_heading_deg": 3.0,
+        "min_speed_mps": 2.0,
+        "window_minutes": 30,
+        "min_frames": 5,
+        "thresholds_mps": [0.03, 0.06, 0.11, 0.21, 0.29],
+        "scores": ["0-1", "1", "1-2", "2", "2-3", "3"],
+    },
     "output": {
         "csv": True,                         # results/YYYY-MM-DD.csv
         "profiles": True,                    # profiles/YYYY-MM-DD.jsonl — построчные ширины

@@ -9,6 +9,7 @@ from typing import Any, Deque, Dict, Optional, Tuple
 
 import numpy as np
 
+from . import compression
 from .camera import CameraModel, model_to_image_coords
 from .channel import class_margin, connected_components, horizon_points, main_water_component, row_edges
 from .geometry import GroundPlane, HorizonTracker, dip_deg, fit_line_robust
@@ -30,24 +31,37 @@ class FrameProcessor:
         self.cls = {k: names.index(k) for k in ("background", "ice", "water", "ship")}
         self.tracker = HorizonTracker(cfg["horizon"]["history_minutes"])
         self.history: Deque[Tuple[float, float]] = deque(maxlen=500)
+        self.compression = compression.CompressionTracker(cfg["compression"]["window_minutes"])
 
     def process_image(self, img_rgb: np.ndarray, timestamp: Optional[datetime] = None,
-                      name: str = "") -> Dict[str, Any]:
+                      name: str = "", speed_mps: Optional[float] = None) -> Dict[str, Any]:
         if self.segmenter is None:
             raise RuntimeError("Модель не загружена")
         t0 = time.perf_counter()
         logits = self.segmenter.predict(img_rgb)
         t_model = time.perf_counter() - t0
         res = self.process_prediction(np.argmax(logits, axis=0).astype(np.uint8), logits,
-                                      (img_rgb.shape[1], img_rgb.shape[0]), timestamp, name)
+                                      (img_rgb.shape[1], img_rgb.shape[0]), timestamp, name, speed_mps)
         res["result"]["model_ms"] = round(t_model * 1000, 1)
         res["result"]["proc_ms"] = round((time.perf_counter() - t0) * 1000, 1)
         return res
 
     def process_prediction(self, labels: np.ndarray, logits: Optional[np.ndarray],
                            image_size: Tuple[int, int], timestamp: Optional[datetime] = None,
-                           name: str = "") -> Dict[str, Any]:
-        """labels (h, w) и logits (C, h, w) или None -> результат кадра."""
+                           name: str = "", speed_mps: Optional[float] = None) -> Dict[str, Any]:
+        """labels (h, w) и logits (C, h, w) или None -> результат кадра (+ сжатие)."""
+        out = self._process(labels, logits, image_size, timestamp, name)
+        ccfg = self.cfg["compression"]
+        source = "meta" if speed_mps is not None else ""
+        if speed_mps is None and float(ccfg["speed_default_mps"]) > 0:
+            speed_mps, source = float(ccfg["speed_default_mps"]), "config"
+        t = timestamp.timestamp() if timestamp else time.time()
+        out["result"].update(compression.evaluate(out["details"].get("measure"), out["result"],
+                                                  speed_mps, source, t, self.compression, ccfg))
+        return out
+
+    def _process(self, labels: np.ndarray, logits: Optional[np.ndarray], image_size: Tuple[int, int],
+                 timestamp: Optional[datetime], name: str) -> Dict[str, Any]:
         t_epoch = timestamp.timestamp() if timestamp else time.time()
         mcfg, qcfg = self.cfg["measure"], self.cfg["quality"]
         h, w = labels.shape

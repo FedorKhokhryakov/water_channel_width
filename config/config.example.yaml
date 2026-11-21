@@ -52,3 +52,10 @@ logging:
 web:
   host: 127.0.0.1                       # доступ с берега — через ssh -L 8585:127.0.0.1:8585
   port: 8585
+
+compression:                            # сжатие по скорости закрытия канала
+  speed_key: ""                         # поле скорости судна в JSON архива, напр. "nav.speed"
+  speed_units: mps                      # mps | knots
+  speed_default_mps: 0                  # если скорости в архиве нет; 0 = сжатие не считаем
+  vessel_clear_m: 500                   # судно сзади ближе -> сжатие не считаем
+  window_minutes: 30                    # скользящая медиана
