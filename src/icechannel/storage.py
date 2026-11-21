@@ -87,6 +87,7 @@ class ResultStore:
             (self.root / sub).mkdir(parents=True, exist_ok=True)
         self._n = 0
         self._low_space_warned = False
+        self._checked: set = set()          # CSV, чей заголовок уже сверен
 
     def free_mb(self) -> float:
         return shutil.disk_usage(str(self.root)).free / 1e6
@@ -162,6 +163,9 @@ class ResultStore:
 
     def _append_csv(self, path: Path, res: Dict[str, Any]) -> None:
         new = not path.exists()
+        if not new and path not in self._checked:
+            self._upgrade_csv(path)
+            self._checked.add(path)
         row = {k: res.get(k, "") for k in self.columns}
         if isinstance(row.get("meta"), dict):
             row["meta"] = json.dumps(row["meta"], ensure_ascii=False) if row["meta"] else ""
@@ -170,6 +174,21 @@ class ResultStore:
             if new:
                 w.writeheader()
             w.writerow(row)
+
+    def _upgrade_csv(self, path: Path) -> None:
+        """CSV от прежней версии с другими колонками -> переписать с текущим заголовком."""
+        with open(path, newline="", encoding="utf-8") as f:
+            header = next(csv.reader(f), [])
+            if header == self.columns:
+                return
+            f.seek(0)
+            rows = list(csv.DictReader(f))
+        tmp = path.with_suffix(".tmp")
+        with open(tmp, "w", newline="", encoding="utf-8") as f:
+            w = csv.DictWriter(f, fieldnames=self.columns, extrasaction="ignore", restval="")
+            w.writeheader()
+            w.writerows(rows)
+        tmp.replace(path)
 
     @staticmethod
     def _append_profile(path: Path, res: Dict[str, Any], det: Dict[str, Any]) -> None:
