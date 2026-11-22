@@ -87,8 +87,9 @@ class Engine:
         return v * 0.5144 if ccfg["speed_units"] == "knots" else v
 
     def process_image(self, img, ts: Optional[datetime], name: str,
-                      meta: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
-        out = self.processor.process_image(img, ts, name, self._speed(meta))
+                      meta: Optional[Dict[str, Any]] = None, speed_mps: Optional[float] = None) -> Dict[str, Any]:
+        speed = speed_mps if speed_mps is not None else self._speed(meta)
+        out = self.processor.process_image(img, ts, name, speed)
         out["result"]["model"] = self.segmenter.version
         out["result"]["meta"] = meta or ""
         self.store.save(out, img, self.colors)

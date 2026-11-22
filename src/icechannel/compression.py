@@ -53,7 +53,7 @@ class CompressionTracker:
 def evaluate(m: Optional[Dict[str, Any]], result: Dict[str, Any], speed: Optional[float],
              speed_source: str, t: float, tracker: CompressionTracker, ccfg: Dict[str, Any]) -> Dict[str, Any]:
     """Колонки сжатия для результата кадра."""
-    out: Dict[str, Any] = dict(speed_mps=speed if speed is not None else "", speed_source=speed_source,
+    out: Dict[str, Any] = dict(speed_mps=round(speed, 3) if speed is not None else "", speed_source=speed_source,
                                closing_slope_m_per_100m="", closing_speed_ms="", closing_note="",
                                compression_speed_ms="", compression_n=0, compression_score="")
     note = ""

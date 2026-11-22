@@ -54,6 +54,12 @@ def _cmd_process(args) -> int:
         cfg["compression"]["speed_default_mps"] = float(args.speed)
     if args.no_overlays:
         cfg["output"]["overlays"] = False
+    speeds = None
+    if args.speed_csv:
+        from .speedlog import SpeedTable
+
+        speeds = SpeedTable(args.speed_csv)
+        log.info("Скорость из %s: %d записей", args.speed_csv, len(speeds))
     out_dir = Path(args.out) if args.out else cfg.path("output")
     setup_logging(cfg, None, foreground=True)
     files = list(iter_local_inputs(args.inputs))
@@ -73,7 +79,8 @@ def _cmd_process(args) -> int:
         for i, f in enumerate(files, 1):
             labels, size = _load_mask(f, grid)
             name = f.name.replace("_mask_label", "")
-            out = proc.process_prediction(labels, None, size, parse_timestamp(f.name), name)
+            ts = parse_timestamp(f.name)
+            out = proc.process_prediction(labels, None, size, ts, name, speeds.at(ts) if speeds else None)
             out["result"]["model"] = "mask"
             img = None
             if args.images:
@@ -100,7 +107,9 @@ def _cmd_process(args) -> int:
                     continue
             else:
                 data = f.read_bytes()
-            r = engine.process_image(decode_image(data), parse_timestamp(f.name), f.name)["result"]
+            ts = parse_timestamp(f.name)
+            r = engine.process_image(decode_image(data), ts, f.name,
+                                     speed_mps=speeds.at(ts) if speeds else None)["result"]
             log.info("[%d/%d] %s %s W=%s м %s", i, len(files), f.name, r["status"], r.get("width_m", "-"),
                      r.get("flags") or r.get("reason") or "")
         except Exception:
@@ -180,6 +189,7 @@ def main(argv=None) -> None:
     pr.add_argument("--images", help="папка с исходными кадрами для overlay в режиме --masks")
     pr.add_argument("--no-overlays", action="store_true")
     pr.add_argument("--speed", type=float, default=0.0, help="скорость судна, м/с (если её нет в архивах)")
+    pr.add_argument("--speed-csv", help="таблица скорости по времени (analytics/nmea_speed.py)")
     pr.add_argument("--limit", type=int, default=0)
     pr.set_defaults(func=_cmd_process)
 
